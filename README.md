@@ -30,7 +30,7 @@ python DetectionTransformer.py image_file
 python DetectionTransformer.py images/img.png
 </font>
 <br>
-<img src="./detected/Img.png">
+<img src="./detected/img.png">
 <br>
 <br>
 <img src="./run-images/run_detection_transformer.png">
