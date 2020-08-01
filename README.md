@@ -35,7 +35,7 @@ python DetectionTransformer.py images/img.png detected
 <img src="./detected/img.png">
 <br>
 <br>
-<img src="./run-images/run_detection_transformer.png">
+<img src="./detected/img.png.txt.png">
 
 <br><br>
 <b>Example 2:</b><br>
