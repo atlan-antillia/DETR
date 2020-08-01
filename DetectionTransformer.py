@@ -127,9 +127,6 @@ class DetectionTransformer():
 
         with open(detected_objects_path, mode='w') as f:
           for item in detected_objects:
-             print("{}".format(item))
-             #(id, label, score) = item
-             #line = str(id) + " " + str(label) + ": " + str(score) + "\n"
              line = str(item) + "\n"
              f.write(line)
 
