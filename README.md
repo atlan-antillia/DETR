@@ -20,10 +20,11 @@ On PyTorch installation see :<a href="https://pytorch.org/resources/">Resources 
 <br>
 Please run the following script to detect objects in an image file:<br>
 <br>
-python DetectionTransformer.py image_file
+python DetectionTransformer.py image_filepath output_image_dir [filters]
+<br>
+python DetectionTransformer.py input_image_dir output_image_dir [filters]
 <br>
 <br>
-
 <b>Example 1:</b><br>
 
 <font size=2>
@@ -73,7 +74,9 @@ python DetectionTransformer images/Takashimaya2.jpg detected
 
 <b>Example 5:</b><br>
 <b>
- Let's apply filters to draw matched labels specified by the filters on the input image.<br><br>
+ Let's apply filters to draw matched labels specified by the filters on the input image.
+<br>
+<br>
 </b>
 <font size=2>
 <pre>
