@@ -71,10 +71,10 @@ python DetectionTransformer images/Takashimaya2.jpg
 python DetectionTransformer.py images/img.png [person,motorcycle]
 </font>
 <br><br>
-<img src="./detected/person,motorcycle_img.png">
+<img src="./detected/person_motorcycle_img.png">
 <br><br>
 
-<img src="./run-images/run_detection_transformer_with_filters.png">
+<img src="./detected/person_motorcycle_img.png.txt.png">
 
 <br><br>
 
