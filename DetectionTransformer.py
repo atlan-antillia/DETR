@@ -15,6 +15,9 @@
 #  Added detect_all method to DetectionTransformer class.
 #  Added FiltersParser class.
 
+# 2020/08/01:
+#  Added a procedure to save detected_objects information to a text file.
+
 import os
 
 import glob
@@ -25,6 +28,10 @@ from pathlib import Path
 import sys
 from DETRdemo import DETRdemo
 
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+
 from PIL import Image, ImageDraw,  ImageFont
 
 import requests
@@ -33,29 +40,15 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms as T
 
-## coco classes
-CLASSES = [
-    'N/A', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-    'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'N/A',
-    'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse',
-    'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack',
-    'umbrella', 'N/A', 'N/A', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis',
-    'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-    'skateboard', 'surfboard', 'tennis racket', 'bottle', 'N/A', 'wine glass',
-    'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
-    'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
-    'chair', 'couch', 'potted plant', 'bed', 'N/A', 'dining table', 'N/A',
-    'N/A', 'toilet', 'N/A', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
-    'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'N/A',
-    'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
-    'toothbrush'
-]
-
+#2020/08/01
+from FiltersParser import *
 
 class DetectionTransformer():
     # Constructor
-    def __init__(self):
-        self.detr = DETRdemo(num_classes=91)
+    def __init__(self, classes=COCO_CLASSES):
+        self.classes = classes
+        n_classes    = len(self.classes)
+        self.detr = DETRdemo(num_classes=n_classes)
         state_dict = torch.hub.load_state_dict_from_url(
               url='https://dl.fbaipublicfiles.com/detr/detr_demo-da2a99e9.pth',
               map_location='cpu', check_hash=True)
@@ -82,21 +75,15 @@ class DetectionTransformer():
             
             print("filename {}".format(image_file_path))
             
-            detected_image = self.detect(image_file_path, filters)
-        
-            parser = FiltersParser(str(filters), CLASSES)
-            output_image_filename = parser.get_ouput_filename(image_file_path, output_image_dir)
-            print("output_image_filename {}".format(output_image_filename))
-            
-            detected_image.save(output_image_filename)
+            self.detect(image_file_path, output_image_dir, filters)
 
 
     #2020/06/13 Added filters parameter to select objects, which takes a list something 
     # like this [person] to select persons only.
     # 
-    def detect(self, image_file_path, filters):
+    def detect(self, image_filepath, output_image_dir, filters):
         
-        im = Image.open(image_file_path)
+        im = Image.open(image_filepath)
         # If im were "RGBA", convert to "RGB".
         im = im.convert("RGB")
 
@@ -117,9 +104,34 @@ class DetectionTransformer():
           fsize = 12
         # Draw labels only on the input image
         
-        pil_img = self.draw_labels(im, scores, boxes, fsize, filters)
+        (detected_img, detected_objects) = self.draw_labels(im, scores, boxes, fsize, filters)
 
-        return pil_img
+        filename_only = self.get_filename_only(image_filepath)
+        output_image_filepath = os.path.join(output_image_dir, filename_only)
+        
+        print("filters {}".format(filters))
+        
+        if filters is not None:
+           parser = FiltersParser(str(filters), self.classes)
+           output_image_filepath = parser.get_ouput_filename(image_filepath, output_image_dir) 
+           
+        print(output_image_filepath)
+        print("saved as {}".format(output_image_filepath))
+        
+        detected_img.save(output_image_filepath)
+
+
+        # Save detected_objects data to a detected_objects_path file.
+        # [(1, 'car', '0.9'), (2, 'person', '0.8'),... ]  
+        detected_objects_path = output_image_filepath + '.txt'
+
+        with open(detected_objects_path, mode='w') as f:
+          for item in detected_objects:
+             print("{}".format(item))
+             #(id, label, score) = item
+             #line = str(id) + " " + str(label) + ": " + str(score) + "\n"
+             line = str(item) + "\n"
+             f.write(line)
 
 
     def detect_objects(self, img, model, transform, size):
@@ -131,7 +143,9 @@ class DetectionTransformer():
 
         # keep only predictions with 0.7+ confidence
         probas = outputs['pred_logits'].softmax(-1)[0, :, :-1]
-        keep = probas.max(-1).values > 0.7
+
+        #keep = probas.max(-1).values > 0.7
+        keep = probas.max(-1).values > 0.5
 
         # convert boxes from [0; 1] to image scales
         bboxes_scaled = self.rescale_bboxes(outputs['pred_boxes'][0, keep], size)
@@ -143,22 +157,27 @@ class DetectionTransformer():
         print("Fontsize {}".format(fsize))
         font = ImageFont.truetype("arial", fsize)
         index = 1
+        detected_objects = []
         for p, (xmin, ymin, xmax, ymax) in zip(prob, boxes.tolist()):
             cl = p.argmax()
             
-            object_class = CLASSES[cl]
+            object_class = self.classes[cl]
             text = f'{index} {object_class}: {p[cl]:0.2f}'
+            detected_object = f'{index} {object_class} {p[cl]:0.2f}'
             # If filters specified
 
             if filters != None and isinstance(filters, list) and object_class in filters:
                 draw.text((xmin, ymin), text, font=font, fill=(255, 255, 255))
                 print(text)
+                detected_objects.append(detected_object)
                 index += 1
             elif filters == None or len(filters) == 0:
                 draw.text((xmin, ymin), text, font=font, fill=(255, 255, 255))
                 print(text)
+                detected_objects.append(detected_object)
+
                 index += 1
-        return pil_img
+        return (pil_img, detected_objects)
 
     # for output bounding box post-processing
     def box_cxcywh_to_xyxy(self, x):
@@ -174,121 +193,80 @@ class DetectionTransformer():
         b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
         return b
 
+    def get_filename_only(self, input_image_filename):
 
+       rpos  = input_image_filename.rfind("/")
+       fname = input_image_filename
 
-class FiltersParser:
+       if rpos >0:
+           fname = input_image_filename[rpos+1:]
+       else:
+           rpos = input_image_filename.rfind("\\")
+           if rpos >0:
+              fname = input_image_filename[rpos+1:]
+       return fname
 
-  # Specify a str_filters string like this "[person,motorcycle]" ,
-
-  def __init__(self, str_filters, classes):
-      print("FiltersParser {}".format(str_filters))
-      
-      self.str_filters  = str_filters
-      self.classes      = classes
-      self.filters  = []
-
-      
-  def get_filters(self):
-      self.filters = []
-      if self.str_filters != None:
-          tmp = self.str_filters.strip('[]').split(',')
-          if len(tmp) > 0:
-              for e in tmp:
-                  e = e.lstrip()
-                  e = e.rstrip()
-                  if e in self.classes :
-                    self.filters.append(e)
-                  else:
-                    print("Invalid label(class)name {}".format(e))
-      return self.filters
-
-
-  def get_ouput_filename(self, input_image_filename, image_out_dir):
-        rpos  = input_image_filename.rfind("/")
-        fname = input_image_filename
-        if rpos >0:
-            fname = input_image_filename[rpos+1:]
-        else:
-            rpos = input_image_filename.rfind("\\")
-            if rpos >0:
-                fname = input_image_filename[rpos+1:]
-          
-        #print("Input filename {}".format(fname))
-        
-        abs_out  = os.path.abspath(image_out_dir)
-        if not os.path.exists(abs_out):
-            os.makedirs(abs_out)
-
-        filname = ""
-        if self.str_filters != None:
-            filname = self.str_filters.strip('[]')
-            filname = filname.strip("'")
-            filname += "_"
-
-        output_image_filename = os.path.join(abs_out, filname + fname)
-        return output_image_filename
 
 
 def parse_argv(argv):
     #The following img.png is taken from 
     # 'https://user-images.githubusercontent.com/11736571/77320690-099af300-6d37-11ea-9d86-24f14dc2d540.png'
-    input_image_filename = "./images/img.png"
-    str_filters = None
-    filters = None
-    if len(sys.argv) >= 2:
-        input_image_filename = sys.argv[1]
+    input_image_path = "./images/img.png"
+    output_image_dir = None
+    str_filters      = None
+    filters          = None
+    if len(argv) >= 2:
+      input_image_path = argv[1]
+        
+    if len(argv) >= 3:
+      output_image_dir = argv[2]
 
-    if len(sys.argv) == 3:
-        # Specify a string like this [person,motorcycle] or "[person,motorcycle]" ,
-        str_filters = sys.argv[2]
-           
-    parser = FiltersParser(str_filters, CLASSES) 
-    filters = parser.get_filters()
+    if len(argv) == 4:
+      # Specify a string like this [person,motorcycle] or "[person,motorcycle]" ,
+      str_filters = argv[3]
+      filtersParser = FiltersParser(str_filters, COCO_CLASSES)
+      filters = filtersParser.get_filters()
+
                           
-    if not os.path.exists(input_image_filename):
-        print("Not found {}".format(input_image_filename))
-        raise Exception("Not found {}".format(input_image_filename))
-    else:
-        output_image_filename = parser.get_ouput_filename(input_image_filename, "detected")
-                  
-    return (input_image_filename, filters, output_image_filename)
+    if not os.path.exists(input_image_path):
+        print("Not found {}".format(input_image_path))
+        raise Exception("Not found {}".format(input_image_path))
+    if not os.path.exists(output_image_dir):
+        os.makedirs(output_image_dir)                  
+        
+    return (input_image_path, output_image_dir, filters)
                    
 
-  
-  
+
 #########################################
 #
 if __name__ == "__main__":
-
+    
+    classes = COCO_CLASSES
+    
     try:
-        # input_image_file filters
-        if len(sys.argv) == 2 or len(sys.argv) == 3:
-            (input_image_filename, filters, output_image_filename) = parse_argv(sys.argv)
-            print("input_image_filename {}".format(input_image_filename))
-            print("filters {}".format(filters))
-          
-            detr = DetectionTransformer()
+        # python DetectionTransformer.py input_image_filepath output_jmage_dir filters
+         
+        (input_image_filepath, output_image_dir, filters, ) = parse_argv(sys.argv)
+        print("input_image_filepath {}".format(input_image_filepath))
+        print("output_image_dir     {}".format(output_image_dir))
+        print("filters              {}".format(filters))
+         
+        if os.path.isfile(input_image_filepath):
+          detr = DetectionTransformer(classes)
             
-            detected_img= detr.detect(input_image_filename, filters)
-            
-            print("saved as {}".format(output_image_filename))
-            
-            detected_img.save(output_image_filename)
+          detr.detect(input_image_filepath, output_image_dir, filters)
 
-        #2020/06/16 Added the following lines to suppoer image_folders.
-        #python DetectionTransformer.py ./input_images/  ./out_images/ [person,car]
-        elif len(sys.argv) == 4:
-            input_image_dir  = sys.argv[1]
-            output_image_dir = sys.argv[2]
-            
-            parser = FiltersParser(sys.argv[3], CLASSES)
-            
-            filters = parser.get_filters()
-            
-            detr = DetectionTransformer()
-            
-            # This is a batch operation of object detection to all images in an input_image_dir. 
-            detr.detect_all(input_image_dir, output_image_dir, filters)
+        #2020/06/16 Added the following lines to support image_folders.
+        #python DetectionTransformer.py ./input_image_dir/  ./output_image_dir/ [person,car]
+        elif os.path.isdir(input_image_filepath):
+          input_image_dir  = input_image_filepath
+          detr = DetectionTransformer(classes)
+
+          # This is a batch operation of object detection to all images in an input_image_dir. 
+          detr.detect_all(input_image_dir, output_image_dir, filters)
+        else:
+          raise Exception("Unsupported imput_image {}".format(input_image_filepath))
 
     except:
         traceback.print_exc()
