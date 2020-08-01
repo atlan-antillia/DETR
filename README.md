@@ -27,7 +27,9 @@ python DetectionTransformer.py image_file
 <b>Example 1:</b><br>
 
 <font size=2>
-python DetectionTransformer.py images/img.png
+<pre>
+python DetectionTransformer.py images/img.png detected
+</pre>
 </font>
 <br>
 <img src="./detected/img.png">
@@ -38,7 +40,9 @@ python DetectionTransformer.py images/img.png
 <br><br>
 <b>Example 2:</b><br>
 <font size=2>
-python DetectionTransformer.py images/ShinJuku.jpg
+<pre>
+python DetectionTransformer.py images/ShinJuku.jpg detected
+</pre>
 </font>
 <br><br>
 <img src="./detected/ShinJuku.jpg">
@@ -48,7 +52,9 @@ python DetectionTransformer.py images/ShinJuku.jpg
 <b>Example 3:</b><br>
 
 <font size=2>
-python DetectionTransformer.py images/ShinJuku2.jpg
+<pre>
+python DetectionTransformer.py images/ShinJuku2.jpg detected
+</pre>
 </font>
 <br><br>
 <img src="./detected/ShinJuku2.jpg">
@@ -57,7 +63,9 @@ python DetectionTransformer.py images/ShinJuku2.jpg
 <b>Example 4:</b><br>
 
 <font size=2>
-python DetectionTransformer images/Takashimaya2.jpg
+<pre>
+python DetectionTransformer images/Takashimaya2.jpg detected
+</pre>
 </font>
 <br><br>
 <img src="./detected/Takashimaya2.jpg">
@@ -68,7 +76,9 @@ python DetectionTransformer images/Takashimaya2.jpg
  Let's apply filters to draw matched labels specified by the filters on the input image.<br><br>
 </b>
 <font size=2>
-python DetectionTransformer.py images/img.png [person,motorcycle]
+<pre>
+python DetectionTransformer.py images/img.png detected [person,motorcycle]
+</pre>
 </font>
 <br><br>
 <img src="./detected/person_motorcycle_img.png">
@@ -83,14 +93,15 @@ python DetectionTransformer.py images/img.png [person,motorcycle]
  You can specify input_image_dir, output_image_dir in the following way.<br><br>
 </b>
 <font size=2>
-
-python DetectionTransformer.py images output [person]<br><br>
+<pre>
+python DetectionTransformer.py images detected [person]
+</pre>
 By using the filter "[person]", you can count the number of persons in each image of the images directory.<br> 
 
 </font>
 <br>
-<img src="./output/person_img.png">
+<img src="./detected/person_img.png">
 <br><br>
 
-<img src="./run-images/run_detect_all_with_person_only.png">
+<img src="./detected/all_img.png.txt.png">
 
