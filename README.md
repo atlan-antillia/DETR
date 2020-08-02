@@ -24,6 +24,10 @@ python DetectionTransformer.py image_filepath output_image_dir [filters]
 <br>
 python DetectionTransformer.py input_image_dir output_image_dir [filters]
 <br>
+The optional <i>filters</i> parameter is a list of classes to be selected from the detected objects in a post-processing stage
+after a detection process.<br>
+ To specify the classes to be selected in the post-processing stage, we use the list format like this.
+  [class1, class2,.. classN]
 <br>
 <b>Example 1:</b><br>
 
@@ -82,6 +86,7 @@ python DetectionTransformer images/Takashimaya2.jpg detected
 <pre>
 python DetectionTransformer.py images/img.png detected [person,motorcycle]
 </pre>
+In this case, the objects of <i>person</i> or <i>motorcyle</i> will be selected from the detected objects found in <i>images/img.png</i>.
 </font>
 <br><br>
 <img src="./detected/person_motorcycle_img.png">
