@@ -19,13 +19,14 @@ On PyTorch installation see :<a href="https://pytorch.org/resources/">Resources 
 <br>
 <br>
 Please run the following script to detect objects in an image file:<br>
-<br>
+
 <pre>
 >python DetectionTransformer.py image_filepath output_image_dir [filters]
-
+</pre>
+<pre>
 >python DetectionTransformer.py input_image_dir output_image_dir [filters]
 </pre>
-<br>
+
 The optional <i>filters</i> parameter is a list of classes to be selected from the detected objects in a post-processing stage
 after a detection process.<br>
  To specify the classes to be selected in the post-processing stage, we use the list format like this.
