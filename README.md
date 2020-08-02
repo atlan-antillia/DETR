@@ -20,14 +20,18 @@ On PyTorch installation see :<a href="https://pytorch.org/resources/">Resources 
 <br>
 Please run the following script to detect objects in an image file:<br>
 <br>
-python DetectionTransformer.py image_filepath output_image_dir [filters]
-<br>
-python DetectionTransformer.py input_image_dir output_image_dir [filters]
+<pre>
+>python DetectionTransformer.py image_filepath output_image_dir [filters]
+
+>python DetectionTransformer.py input_image_dir output_image_dir [filters]
+</pre>
 <br>
 The optional <i>filters</i> parameter is a list of classes to be selected from the detected objects in a post-processing stage
 after a detection process.<br>
  To specify the classes to be selected in the post-processing stage, we use the list format like this.
+<pre>
   [class1, class2,.. classN]
+</pre>
 <br>
 <b>Example 1:</b><br>
 
@@ -79,7 +83,6 @@ python DetectionTransformer images/Takashimaya2.jpg detected
 <b>Example 5:</b><br>
 <b>
  Let's apply filters to draw matched labels specified by the filters on the input image.
-<br>
 <br>
 </b>
 <font size=2>
