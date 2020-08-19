@@ -15,8 +15,14 @@
 #  Added detect_all method to DetectionTransformer class.
 #  Added FiltersParser class.
 
-# 2020/08/01:
-#  Added a procedure to save detected_objects information to a text file.
+# 2020/08/20 
+#  Modified the image size to become (800, 600) to be able to get correct detected geometry
+# 2020/08/01, 08/20:
+#  Added a procedure to save detected_objects information to a csv file.
+#
+# 2020/08/20:
+#  Added a procedure to save objects_stats to a csv file.
+#
 
 import os
 
@@ -43,6 +49,35 @@ import torchvision.transforms as T
 #2020/08/01
 from FiltersParser import *
 
+#2020/08/20 Modified to use the following colors to draw rectangles to detected objects
+# onto an detetected image.
+#
+STANDARD_COLORS = [
+    'AliceBlue', 'Chartreuse', 'Aqua', 'Aquamarine', 'Azure', 'Beige', 'Bisque',
+    'BlanchedAlmond', 'BlueViolet', 'BurlyWood', 'CadetBlue', 'AntiqueWhite',
+    'Chocolate', 'Coral', 'CornflowerBlue', 'Cornsilk', 'Crimson', 'Cyan',
+    'DarkCyan', 'DarkGoldenRod', 'DarkGrey', 'DarkKhaki', 'DarkOrange',
+    'DarkOrchid', 'DarkSalmon', 'DarkSeaGreen', 'DarkTurquoise', 'DarkViolet',
+    'DeepPink', 'DeepSkyBlue', 'DodgerBlue', 'FireBrick', 'FloralWhite',
+    'ForestGreen', 'Fuchsia', 'Gainsboro', 'GhostWhite', 'Gold', 'GoldenRod',
+    'Salmon', 'Tan', 'HoneyDew', 'HotPink', 'IndianRed', 'Ivory', 'Khaki',
+    'Lavender', 'LavenderBlush', 'LawnGreen', 'LemonChiffon', 'LightBlue',
+    'LightCoral', 'LightCyan', 'LightGoldenRodYellow', 'LightGray', 'LightGrey',
+    'LightGreen', 'LightPink', 'LightSalmon', 'LightSeaGreen', 'LightSkyBlue',
+    'LightSlateGray', 'LightSlateGrey', 'LightSteelBlue', 'LightYellow', 'Lime',
+    'LimeGreen', 'Linen', 'Magenta', 'MediumAquaMarine', 'MediumOrchid',
+    'MediumPurple', 'MediumSeaGreen', 'MediumSlateBlue', 'MediumSpringGreen',
+    'MediumTurquoise', 'MediumVioletRed', 'MintCream', 'MistyRose', 'Moccasin',
+    'NavajoWhite', 'OldLace', 'Olive', 'OliveDrab', 'Orange', 'OrangeRed',
+    'Orchid', 'PaleGoldenRod', 'PaleGreen', 'PaleTurquoise', 'PaleVioletRed',
+    'PapayaWhip', 'PeachPuff', 'Peru', 'Pink', 'Plum', 'PowderBlue', 'Purple',
+    'Red', 'RosyBrown', 'RoyalBlue', 'SaddleBrown', 'Green', 'SandyBrown',
+    'SeaGreen', 'SeaShell', 'Sienna', 'Silver', 'SkyBlue', 'SlateBlue',
+    'SlateGray', 'SlateGrey', 'Snow', 'SpringGreen', 'SteelBlue', 'GreenYellow',
+    'Teal', 'Thistle', 'Tomato', 'Turquoise', 'Violet', 'Wheat', 'White',
+    'WhiteSmoke', 'Yellow', 'YellowGreen'
+]
+
 class DetectionTransformer():
     # Constructor
     def __init__(self, classes=COCO_CLASSES):
@@ -54,7 +89,10 @@ class DetectionTransformer():
               map_location='cpu', check_hash=True)
         self.detr.load_state_dict(state_dict)
         self.detr.eval();
-
+        self.WIDTH  = 800
+        self.HEIGHT = 600
+        
+        
     #2020/06/16 
     # Detect each image in input_image_dir, and save detected image to output_dir
     def detect_all(self, input_image_dir, output_image_dir, filters):
@@ -64,6 +102,7 @@ class DetectionTransformer():
         if os.path.isdir(input_image_dir):
           image_list.extend(glob.glob(os.path.join(input_image_dir, "*.png")) )
           image_list.extend(glob.glob(os.path.join(input_image_dir, "*.jpg")) )
+          image_list.extend(glob.glob(os.path.join(input_image_dir, "*.jpeg")) )
 
         print("image_list {}".format(image_list) )
         if not os.path.exists(output_image_dir):
@@ -84,11 +123,14 @@ class DetectionTransformer():
     def detect(self, image_filepath, output_image_dir, filters):
         
         im = Image.open(image_filepath)
-        # If im were "RGBA", convert to "RGB".
+        #2020/08/20 Resizing the original im to the size (self.WIDTH, self.HEIGHT)
+        im = im.resize((self.WIDTH, self.HEIGHT), Image.LANCZOS)
+
+        # If im were "RGBA" (png files), convert to "RGB".
         im = im.convert("RGB")
 
         transform = T.Compose([
-            T.Resize(800),
+            T.Resize(self.WIDTH),
             T.ToTensor(),
             T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
             
@@ -102,9 +144,9 @@ class DetectionTransformer():
         fsize = int(w/130)
         if fsize <10:
           fsize = 12
-        # Draw labels only on the input image
+        # Draw labels only on the input image, get detected_objects and objects_stats
         
-        (detected_img, detected_objects) = self.draw_labels(im, scores, boxes, fsize, filters)
+        (detected_img, detected_objects, objects_stats) = self.draw_labels(im, scores, boxes, fsize, filters)
 
         filename_only = self.get_filename_only(image_filepath)
         output_image_filepath = os.path.join(output_image_dir, filename_only)
@@ -115,22 +157,50 @@ class DetectionTransformer():
            parser = FiltersParser(str(filters), self.classes)
            output_image_filepath = parser.get_ouput_filename(image_filepath, output_image_dir) 
            
-        print(output_image_filepath)
-        print("saved as {}".format(output_image_filepath))
+        #print(output_image_filepath)
         
         detected_img.save(output_image_filepath)
+        print("=== Saved an image as {}".format(output_image_filepath))
 
+        CSV   = ".csv"
+        STATS = "_stats"
+        detected_objects_path = output_image_filepath + CSV
+        objects_stats_path    = output_image_filepath + STATS + CSV
 
+        self.save_detected_objects(detected_objects, detected_objects_path)
+        self.save_objects_stats(objects_stats, objects_stats_path)
+      
+ 
+    def save_detected_objects(self, detected_objects, detected_objects_path):
         # Save detected_objects data to a detected_objects_path file.
         # [(1, 'car', '0.9'), (2, 'person', '0.8'),... ]  
-        detected_objects_path = output_image_filepath + '.txt'
-
+        #2020/08/19 Modified to save detected_objects to a csv file.
+        NL = "\n"
         with open(detected_objects_path, mode='w') as f:
           for item in detected_objects:
-             line = str(item) + "\n"
-             f.write(line)
+            line = str(item).strip("()").replace("'", "") + NL
+            f.write(line)
+        print("=== Saved detected_objects as {}".format(detected_objects_path))
 
 
+    def save_objects_stats(self, objects_stats, objects_stats_path):
+        if objects_stats is None:
+          return
+        #2020/08/15 atlan: save the detected_objects as csv file
+        print("==== objects_stats {}".format(objects_stats))
+
+        print("==== Saved objects_stats to {}".format(objects_stats_path))
+      
+        SEP = ","
+        NL  = "\n"
+
+        with open(objects_stats_path, mode='w') as s:
+          for (k,v) in enumerate(objects_stats.items()):
+            (name, value) = v
+            line = str(k +1) + SEP + str(name) + SEP + str(value) + NL
+            s.write(line)
+        
+        
     def detect_objects(self, img, model, transform, size):
         # mean-std normalize the input image (batch-size: 1)
         # standard PyTorch mean-std input image normalization
@@ -155,26 +225,50 @@ class DetectionTransformer():
         font = ImageFont.truetype("arial", fsize)
         index = 1
         detected_objects = []
+        #2020/08/20
+        objects_stats    = {}
+        
         for p, (xmin, ymin, xmax, ymax) in zip(prob, boxes.tolist()):
             cl = p.argmax()
             
             object_class = self.classes[cl]
             text = f'{index} {object_class}: {p[cl]:0.2f}'
-            detected_object = f'{index} {object_class} {p[cl]:0.2f}'
+            x = int(xmin)
+            y = int(ymin)
+            width = int(xmax - xmin)
+            height =int(ymax - ymin)
+            
+            score = f'{p[cl]:0.2f}'
+            detected_object = (index, object_class, score, x, y, width, height)
             # If filters specified
-
             if filters != None and isinstance(filters, list) and object_class in filters:
-                draw.text((xmin, ymin), text, font=font, fill=(255, 255, 255))
-                print(text)
+                draw.rectangle([xmin, ymin, xmax, ymax], outline=STANDARD_COLORS[index], width=2)
+
+                draw.text((xmin+2, ymin+2), text, font=font, fill=(255, 255, 255))
+                print(detected_object)
                 detected_objects.append(detected_object)
+                if object_class not in objects_stats:
+                  objects_stats[object_class] = 1
+                else:
+                  count = int(objects_stats[object_class])
+                  objects_stats.update({object_class: count+1})
+
                 index += 1
             elif filters == None or len(filters) == 0:
-                draw.text((xmin, ymin), text, font=font, fill=(255, 255, 255))
-                print(text)
+                draw.rectangle([xmin, ymin, xmax, ymax], outline=STANDARD_COLORS[index], width=2)
+
+                draw.text((xmin+2, ymin+2), text, font=font, fill=(255, 255, 255))
+                print(detected_object)
                 detected_objects.append(detected_object)
+                if object_class not in objects_stats:
+                  objects_stats[object_class] = 1
+                else:
+                  count = int(objects_stats[object_class])
+                  objects_stats.update({object_class: count+1})
 
                 index += 1
-        return (pil_img, detected_objects)
+        return (pil_img, detected_objects, objects_stats)
+
 
     # for output bounding box post-processing
     def box_cxcywh_to_xyxy(self, x):
@@ -185,9 +279,9 @@ class DetectionTransformer():
 
 
     def rescale_bboxes(self, out_bbox, size):
-        img_w, img_h = size
+        #img_w, img_h = size
         b = self.box_cxcywh_to_xyxy(out_bbox)
-        b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+        b = b * torch.tensor([self.WIDTH, self.HEIGHT, self.WIDTH, self.HEIGHT], dtype=torch.float32)
         return b
 
     def get_filename_only(self, input_image_filename):

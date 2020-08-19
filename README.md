@@ -21,11 +21,13 @@ On PyTorch installation see :<a href="https://pytorch.org/resources/">Resources 
 Please run the following script to detect objects in an image file:<br>
 
 <pre>
->python DetectionTransformer.py image_filepath output_image_dir [filters]
+>python DetectionTransformer.py image_file_or_dir output_image_dir [filters]
 </pre>
-<pre>
->python DetectionTransformer.py input_image_dir output_image_dir [filters]
-</pre>
+If image_file_or_dir were a single image file, 
+the commnand above will generate a detected_image_file, detected_objects_csv_file, and objects_stats_csv_file in output_image_dir, respectively.
+<br>
+If image_file_or_dir were a diretory, the simlar process  will be applied to each image file (png, jpg).<br>
+<br>
 
 The optional <i>filters</i> parameter is a list of classes to be selected from the detected objects in a post-processing stage
 after a detection process.<br>
@@ -33,6 +35,7 @@ after a detection process.<br>
 <pre>
   [class1, class2,.. classN]
 </pre>
+
 <br>
 <b>Example 1:</b><br>
 
@@ -45,7 +48,13 @@ python DetectionTransformer.py images/img.png detected
 <img src="./detected/img.png">
 <br>
 <br>
-<img src="./detected/img.png.txt.png">
+detected_objects<br>
+<img src="./detected/img.png.csv.png">
+
+<br>
+<br>
+objects stats_csv<br>
+<img src="./detected/img.png_stats.csv.png">
 
 <br><br>
 <b>Example 2:</b><br>
@@ -88,15 +97,18 @@ python DetectionTransformer images/Takashimaya2.jpg detected
 </b>
 <font size=2>
 <pre>
-python DetectionTransformer.py images/img.png detected [person,motorcycle]
+python DetectionTransformer.py images/img.png detected [person,car]
 </pre>
-In this case, the objects of <i>person</i> or <i>motorcyle</i> will be selected from the detected objects found in <i>images/img.png</i>.
+In this case, the objects of <i>person</i> or <i>car</i> will be selected from the detected objects found in <i>images/img.png</i>.
 </font>
 <br><br>
-<img src="./detected/person_motorcycle_img.png">
+<img src="./detected/person_car_img.png">
 <br><br>
 
-<img src="./detected/person_motorcycle_img.png.txt.png">
+<img src="./detected/person_car_img.png.csv.png">
+
+<br><br>
+<img src="./detected/person_car_img.png_stats.csv.png">
 
 <br><br>
 
@@ -115,5 +127,5 @@ By using the filter "[person]", you can count the number of persons in each imag
 <img src="./detected/person_img.png">
 <br><br>
 
-<img src="./detected/all_img.png.txt.png">
+<img src="./detected/all_person_img.png.txt.png">
 
