@@ -45,7 +45,7 @@ python DetectionTransformer.py images/img.png detected
 </pre>
 </font>
 <br>
-<img src="./detected/img.png" width="80%" height="auto">
+<img src="./detected/img.png" width="1000" height="auto">
 <br>
 <br>
 detected_objects<br>
@@ -64,7 +64,7 @@ python DetectionTransformer.py images/ShinJuku.jpg detected
 </pre>
 </font>
 <br><br>
-<img src="./detected/ShinJuku.jpg" width="80%" height="auto">
+<img src="./detected/ShinJuku.jpg" >
 
 
 <br><br>
@@ -76,7 +76,7 @@ python DetectionTransformer.py images/ShinJuku2.jpg detected
 </pre>
 </font>
 <br><br>
-<img src="./detected/ShinJuku2.jpg" width="80%" height="auto">
+<img src="./detected/ShinJuku2.jpg" >
 
 <br><br>
 <b>Example 4:</b><br>
@@ -87,7 +87,7 @@ python DetectionTransformer images/Takashimaya2.jpg detected
 </pre>
 </font>
 <br><br>
-<img src="./detected/Takashimaya2.jpg" width="80%" height="auto">
+<img src="./detected/Takashimaya2.jpg" >
 <br><br>
 
 <b>Example 5:</b><br>
@@ -102,7 +102,7 @@ python DetectionTransformer.py images/img.png detected [person,car]
 In this case, the objects of <i>person</i> or <i>car</i> will be selected from the detected objects found in <i>images/img.png</i>.
 </font>
 <br><br>
-<img src="./detected/person_car_img.png" width="80%" height="auto">
+<img src="./detected/person_car_img.png" width="1000" height="auto">
 <br><br>
 
 <img src="./detected/person_car_img.png.csv.png">
@@ -124,7 +124,7 @@ By using the filter "[person]", you can count the number of persons in each imag
 
 </font>
 <br>
-<img src="./detected/person_img.png" width="80%" height="auto">
+<img src="./detected/person_img.png" width="1000" height="auto">
 <br><br>
 
 <img src="./detected/all_person_img.png.txt.png">
