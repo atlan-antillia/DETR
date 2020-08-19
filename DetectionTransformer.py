@@ -123,14 +123,12 @@ class DetectionTransformer():
     def detect(self, image_filepath, output_image_dir, filters):
         
         im = Image.open(image_filepath)
-        #2020/08/20 Resizing the original im to the size (self.WIDTH, self.HEIGHT)
-        im = im.resize((self.WIDTH, self.HEIGHT), Image.LANCZOS)
 
         # If im were "RGBA" (png files), convert to "RGB".
         im = im.convert("RGB")
 
         transform = T.Compose([
-            T.Resize(self.WIDTH),
+            T.Resize((self.WIDTH, self.HEIGHT), Image.LANCZOS), #2020/08/20 Image.LANCZOS resizing may take a few seconds for a large image.
             T.ToTensor(),
             T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
             
@@ -141,6 +139,13 @@ class DetectionTransformer():
         scores, boxes = self.detect_objects(img, self.detr, transform, im.size)
 
         w, h = im.size
+        
+        #2020/08/20
+        self.image_width  = w
+        self.image_height = h
+        self.width_resize_ratio  = w/self.WIDTH
+        self.height_resize_ratio = h/self.HEIGHT
+        
         fsize = int(w/130)
         if fsize <10:
           fsize = 12
@@ -199,8 +204,8 @@ class DetectionTransformer():
             (name, value) = v
             line = str(k +1) + SEP + str(name) + SEP + str(value) + NL
             s.write(line)
-        
-        
+
+
     def detect_objects(self, img, model, transform, size):
         # mean-std normalize the input image (batch-size: 1)
         # standard PyTorch mean-std input image normalization
@@ -218,6 +223,17 @@ class DetectionTransformer():
         bboxes_scaled = self.rescale_bboxes(outputs['pred_boxes'][0, keep], size)
         return probas[keep], bboxes_scaled
 
+    #2020/08/20 Restore the box geometry in range(self.WIDTH, self.HEIGHT)
+    # to original size in range (self.image_width, self.image_height)
+     
+    def restore_size(self, xmin, ymin, xmax, ymax):
+        xmin = xmin * self.width_resize_ratio
+        ymin = ymin * self.height_resize_ratio
+        
+        xmax = xmax * self.width_resize_ratio
+        ymax = ymax * self.height_resize_ratio
+        return (xmin, ymin, xmax, ymax)
+
 
     def draw_labels(self, pil_img, prob, boxes, fsize, filters):
         draw = ImageDraw.Draw(pil_img)
@@ -230,6 +246,7 @@ class DetectionTransformer():
         
         for p, (xmin, ymin, xmax, ymax) in zip(prob, boxes.tolist()):
             cl = p.argmax()
+            (xmin, ymin, xmax, ymax) = self.restore_size(xmin, ymin, xmax, ymax)
             
             object_class = self.classes[cl]
             text = f'{index} {object_class}: {p[cl]:0.2f}'
