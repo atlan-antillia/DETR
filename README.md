@@ -48,6 +48,11 @@ python DetectionTransformer.py images/img.png detected
 <img src="./detected/img.png" width="1000" height="auto">
 <br>
 <br>
+In this case, you can see some detection and NMS failures as shown below:<br>
+<img src="./detected/NMS_FAILURES.png" width="400" height="auto">
+
+<br>
+<br>
 detected_objects<br>
 <img src="./detected/img.png.csv.png">
 
